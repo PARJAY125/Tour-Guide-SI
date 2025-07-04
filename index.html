@@ -9,49 +9,40 @@
         body {
           padding: 10px;
         }
-
         .container {
           padding: 16px;
           box-shadow: none;
           border-radius: 0;
         }
-
         h2 {
           font-size: 20px;
         }
-
         button {
           width: 100%;
           margin: 6px 0;
           font-size: 16px;
         }
-
         select {
           font-size: 16px;
         }
-
         p,
-        label {
-          font-size: 15px;
-        }
-
+        label,
         #descriptionArea {
           font-size: 15px;
         }
       }
 
+      /* UMUM */
       body {
         font-family: Arial, sans-serif;
         background-color: #f0f4f8;
         padding: 20px;
         color: #333;
       }
-
       h2 {
         text-align: center;
         color: #2c3e50;
       }
-
       .container {
         max-width: 600px;
         margin: 0 auto;
@@ -60,7 +51,6 @@
         border-radius: 12px;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
       }
-
       button {
         background-color: #3498db;
         color: white;
@@ -71,11 +61,9 @@
         cursor: pointer;
         font-size: 14px;
       }
-
       button:hover {
         background-color: #2980b9;
       }
-
       select {
         padding: 8px;
         width: 100%;
@@ -84,20 +72,12 @@
         border: 1px solid #ccc;
         font-size: 14px;
       }
-
-      p,
-      label {
-        margin-top: 12px;
-        font-size: 14px;
-      }
-
       #descriptionArea {
         margin-top: 16px;
         background-color: #ecf0f1;
         padding: 10px;
         border-radius: 8px;
       }
-
       #location,
       #feedback {
         font-weight: bold;
@@ -109,173 +89,194 @@
     <div class="container">
       <h2>Asisten Wisata Web</h2>
 
-      <!-- GPS -->
       <button onclick="getLocation()">📍 Dapatkan Lokasi</button>
       <p id="location">Lokasi: -</p>
 
-      <!-- Dropdown Pilih Tempat -->
       <label for="placeSelect">Pilih Tempat Wisata:</label>
       <select id="placeSelect" onchange="updateSelectedPlace()">
         <option value="">-- Pilih Tempat --</option>
       </select>
 
-      <!-- TTS -->
-      <button onclick="playTTS()">🔊 Baca Deskripsi</button>
-      <button onclick="stopTTS()">Stop</button>
-
       <div id="descriptionArea">
         <b>Deskripsi:</b>
         <p id="descriptionText">-</p>
+
+        <div style="text-align: end">
+          <button onclick="stopTTS()">Stop</button>
+          <button onclick="playTTS()">🔊 Baca Deskripsi</button>
+        </div>
       </div>
 
-      <br />
-
-      <!-- STT -->
-      <button onclick="startListening()">🎙️ Feedback Suara</button>
+      <!-- Rekaman suara -->
+      <button onclick="startRecording()">🎙️ Mulai Rekam</button>
+      <button onclick="stopRecording()">🛑 Stop Rekam</button>
+      <button onclick="playRecording()">▶️ Putar Rekaman</button>
       <p id="feedback">Feedback: -</p>
+      <audio id="audioPlayback" controls style="display: none"></audio>
     </div>
 
     <script>
+      // data credit to https://www.kaggle.com/datasets/bertnardomariouskono/bali-tourist-attractions-dataset-from-google-maps
       const places = [
         {
-          name: 'Pantai Kuta',
-          lat: -8.7178,
-          lon: 115.1686,
+          name: 'Taman Mumbul Sangeh',
+          lat: -8.483959,
+          lon: 115.2122881,
+          radius: 300,
           description:
-            'Selamat datang di Pantai Kuta, surga peselancar dan wisatawan mancanegara...',
+            'Taman Mumbul Sangeh adalah taman spiritual dengan kolam alami yang sering digunakan untuk kegiatan keagamaan dan penyucian diri.',
         },
         {
-          name: 'Ubud Monkey Forest',
-          lat: -8.5191,
-          lon: 115.259,
+          name: 'Sangeh Monkey Forest',
+          lat: -8.4817743,
+          lon: 115.2067391,
+          radius: 400,
           description:
-            'Anda sekarang berada di Ubud Monkey Forest, kawasan hutan tropis...',
+            'Sangeh Monkey Forest adalah hutan lindung yang menjadi rumah bagi ratusan monyet liar serta pura suci di tengah hutan yang rimbun.',
         },
         {
-          name: 'Tanah Lot',
-          lat: -8.6216,
-          lon: 115.0868,
+          name: 'Objek Wisata Sangeh',
+          lat: -8.4815663,
+          lon: 115.2065458,
+          radius: 400,
           description:
-            'Di depan Anda berdiri megah Tanah Lot, pura suci yang dibangun di atas batu karang...',
+            'Objek Wisata Sangeh menyuguhkan pengalaman menyatu dengan alam sambil mengunjungi pura tua yang dikelilingi hutan pala.',
         },
         {
-          name: 'Tegallalang Rice Terrace',
-          lat: -8.4352,
-          lon: 115.2798,
+          name: 'Satria Gatotkaca Park',
+          lat: -8.7443882,
+          lon: 115.1788673,
+          radius: 200,
           description:
-            'Selamat datang di Tegallalang Rice Terrace, hamparan sawah berundak yang memesona...',
+            'Taman ini menampilkan patung Gatotkaca yang megah, menyambut pengunjung yang datang dari Bandara Ngurah Rai dengan keindahan seni Bali.',
         },
         {
-          name: 'Pantai Sanur',
-          lat: -8.6939,
-          lon: 115.2632,
+          name: 'Desa Wisata Penarungan',
+          lat: -8.5396366,
+          lon: 115.198893,
+          radius: 500,
           description:
-            'Pantai Sanur dikenal dengan suasana yang lebih tenang dan cocok untuk keluarga...',
+            'Desa ini menawarkan suasana pedesaan yang tenang, budaya lokal yang kental, dan keindahan alam khas Bali Tengah.',
         },
         {
-          name: 'Garuda Wisnu Kencana (GWK)',
-          lat: -8.8077,
-          lon: 115.1668,
+          name: 'Waterblow',
+          lat: -8.8038567,
+          lon: 115.2398639,
+          radius: 150,
           description:
-            'Anda berada di kawasan budaya Garuda Wisnu Kencana, tempat berdirinya patung raksasa...',
+            'Waterblow adalah fenomena alam unik di mana ombak besar menghantam tebing dan menciptakan semburan air spektakuler.',
         },
         {
-          name: 'Pura Besakih',
-          lat: -8.374,
-          lon: 115.4517,
+          name: 'Pantai Mengening',
+          lat: -8.6395322,
+          lon: 115.1007188,
+          radius: 200,
           description:
-            'Pura Besakih, atau dikenal sebagai Mother Temple of Bali, adalah kompleks pura terbesar...',
+            'Pantai yang tenang dan jarang dikunjungi ini menawarkan panorama matahari terbenam yang memukau dengan batu karang besar.',
         },
         {
-          name: 'Danau Beratan & Pura Ulun Danu',
-          lat: -8.275,
-          lon: 115.1669,
+          name: 'Kawasan Pariwisata Nusa Dua',
+          lat: -8.8034419,
+          lon: 115.2282787,
+          radius: 1200,
           description:
-            'Pura Ulun Danu yang mengapung di Danau Beratan menyuguhkan pemandangan yang tenang...',
+            'Kawasan elit Nusa Dua dikenal dengan resort mewah, pantai berpasir putih, dan pusat konvensi berskala internasional.',
         },
         {
-          name: 'Pantai Pandawa',
-          lat: -8.8486,
-          lon: 115.1909,
+          name: 'Gunung Payung Cultural Park',
+          lat: -8.8374241,
+          lon: 115.2015441,
+          radius: 300,
           description:
-            'Pantai Pandawa tersembunyi di balik tebing kapur yang dramatis...',
+            'Tempat ini memadukan budaya Bali dengan pemandangan laut yang mempesona serta sering digunakan untuk pertunjukan seni.',
         },
         {
-          name: 'Nusa Penida – Kelingking Beach',
-          lat: -8.7331,
-          lon: 115.4855,
+          name: 'Taman Anyar - Traditional Balinese House',
+          lat: -8.5477665,
+          lon: 115.2030592,
+          radius: 200,
           description:
-            'Di Kelingking Beach Nusa Penida, Anda akan disuguhi tebing yang membentuk siluet seperti jari kelingking...',
+            'Pengunjung dapat merasakan kehidupan tradisional Bali dalam arsitektur rumah adat dan aktivitas budaya sehari-hari.',
         },
         {
-          name: 'Pantai Dreamland',
-          lat: -8.7961,
-          lon: 115.1078,
+          name: 'Garuda Wisnu Kencana Cultural Park',
+          lat: -8.8104228,
+          lon: 115.1675986,
+          radius: 800,
           description:
-            'Pantai Dreamland adalah pantai pasir putih yang dikelilingi tebing batu karang...',
+            'GWK adalah taman budaya yang menampilkan patung Garuda Wisnu raksasa serta area pertunjukan seni dan pameran budaya.',
         },
         {
-          name: 'Goa Gajah',
-          lat: -8.519,
-          lon: 115.2906,
+          name: 'Desa Wisata Munggu',
+          lat: -8.6182312,
+          lon: 115.1283214,
+          radius: 400,
           description:
-            'Goa Gajah atau Elephant Cave adalah situs arkeologi bersejarah dengan pahatan batu yang unik...',
+            'Desa Munggu menawarkan kearifan lokal Bali, hamparan sawah, dan kegiatan budaya seperti upacara adat yang otentik.',
         },
         {
-          name: 'Pantai Amed',
-          lat: -8.3344,
-          lon: 115.6813,
+          name: 'Taman Ayun Temple',
+          lat: -8.5416323,
+          lon: 115.1726013,
+          radius: 300,
           description:
-            'Pantai Amed terkenal dengan keindahan bawah lautnya yang luar biasa...',
+            'Pura Taman Ayun adalah salah satu pura kerajaan peninggalan sejarah dengan taman yang luas dan arsitektur tradisional.',
         },
         {
-          name: 'Tirta Empul',
-          lat: -8.4193,
-          lon: 115.3184,
+          name: 'Pantai Double - Six',
+          lat: -8.6975406,
+          lon: 115.1621384,
+          radius: 250,
           description:
-            'Tirta Empul adalah pura dengan kolam suci yang digunakan masyarakat Hindu Bali...',
+            'Pantai yang populer di Seminyak ini cocok untuk bersantai sore hari, bermain voli pantai, atau menikmati sunset.',
         },
         {
-          name: 'Pantai Lovina',
-          lat: -8.1769,
-          lon: 115.0634,
+          name: 'Tanah Wuk',
+          lat: -8.4745676,
+          lon: 115.2057216,
+          radius: 200,
           description:
-            'Pantai Lovina berada di utara Bali, terkenal dengan aktivitas melihat lumba-lumba di pagi hari...',
+            'Tanah Wuk menyuguhkan pemandangan jurang dan sungai yang indah, ideal untuk fotografi dan wisata alam.',
         },
         {
-          name: 'Air Terjun Gitgit',
-          lat: -8.1834,
-          lon: 115.1449,
+          name: 'Taman Sari Wisata Bahari',
+          lat: -8.754191,
+          lon: 115.221179,
+          radius: 300,
           description:
-            'Air Terjun Gitgit adalah salah satu air terjun tertinggi di Bali...',
+            'Destinasi wisata bahari dengan berbagai wahana permainan air, cocok untuk liburan keluarga di pinggir laut.',
         },
         {
-          name: 'Bali Safari & Marine Park',
-          lat: -8.619,
-          lon: 115.2918,
+          name: 'Monumen Taman Mumbul',
+          lat: -8.7856993,
+          lon: 115.194214,
+          radius: 150,
           description:
-            'Di Bali Safari & Marine Park, Anda dapat menjelajahi kehidupan satwa liar dari berbagai benua...',
+            'Monumen ini menjadi tempat bersejarah yang dipadukan dengan taman indah di kawasan Nusa Dua.',
         },
         {
-          name: 'Bukit Campuhan',
-          lat: -8.5069,
-          lon: 115.2582,
+          name: 'Wana Segara Kertih',
+          lat: -8.767093,
+          lon: 115.1826375,
+          radius: 300,
           description:
-            'Jalur trekking di Bukit Campuhan menawarkan pemandangan alam Ubud yang hijau...',
+            'Wana Segara Kertih adalah kawasan hutan wisata yang tenang, cocok untuk relaksasi dan menyatu dengan alam.',
         },
         {
-          name: 'Pantai Blue Lagoon',
-          lat: -8.5198,
-          lon: 115.5203,
+          name: 'Pura Geger Beach',
+          lat: -8.819863,
+          lon: 115.223829,
+          radius: 200,
           description:
-            'Blue Lagoon adalah pantai kecil dengan air sebening kristal dan spot snorkeling yang menakjubkan...',
+            'Pantai ini menyuguhkan keindahan laut yang jernih dengan latar pura, menawarkan ketenangan spiritual dan pesona alam.',
         },
         {
-          name: 'Waterbom Bali',
-          lat: -8.7267,
-          lon: 115.1736,
+          name: 'DESA WISATA BONGKASA PERTIWI',
+          lat: -8.469642,
+          lon: 115.2387016,
+          radius: 500,
           description:
-            'Waterbom Bali adalah taman air terbaik di Asia Tenggara. Cocok untuk liburan keluarga...',
+            'Desa ini mengajak Anda menyelami kehidupan tradisional Bali dengan kegiatan seperti tari-tarian dan kuliner lokal.',
         },
       ];
 
@@ -296,19 +297,51 @@
           : '-';
       }
 
+      function isUserInRadius(userLat, userLon, place) {
+        const R = 6371e3; // radius bumi dalam meter
+        const toRad = (deg) => (deg * Math.PI) / 180;
+
+        const dLat = toRad(place.lat - userLat);
+        const dLon = toRad(place.lon - userLon);
+
+        const a =
+          Math.sin(dLat / 2) ** 2 +
+          Math.cos(toRad(userLat)) *
+            Math.cos(toRad(place.lat)) *
+            Math.sin(dLon / 2) ** 2;
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = R * c;
+
+        return distance <= place.radius;
+      }
+
       function getLocation() {
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             (pos) => {
               const lat = pos.coords.latitude;
               const lon = pos.coords.longitude;
-              document.getElementById(
-                'location'
-              ).innerText = `Lokasi: ${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+
+              const locationText = `Lokasi: ${lat.toFixed(5)}, ${lon.toFixed(
+                5
+              )}`;
+              document.getElementById('location').innerText = locationText;
+
+              // Cek apakah user berada di radius salah satu tempat
+              const nearbyPlaces = places.filter((place) =>
+                isUserInRadius(lat, lon, place)
+              );
+
+              if (nearbyPlaces.length > 0) {
+                const names = nearbyPlaces.map((p) => p.name).join(', ');
+                document.getElementById('location').innerText =
+                  locationText + `\nDekat dengan: ${names}`;
+              } else {
+                document.getElementById('location').innerText =
+                  locationText + `\nTidak dekat dengan tempat wisata manapun.`;
+              }
             },
-            (err) => {
-              alert('Gagal mendapatkan lokasi: ' + err.message);
-            }
+            (err) => alert('Gagal mendapatkan lokasi: ' + err.message)
           );
         } else {
           alert('Browser tidak mendukung Geolocation.');
@@ -331,27 +364,56 @@
         responsiveVoice.cancel();
       }
 
-      function startListening() {
-        if (!('webkitSpeechRecognition' in window)) {
-          alert('Speech Recognition tidak didukung di browser ini.');
-          return;
+      // Rekaman Suara
+
+      // Current Step:
+      // error
+
+      // Next Step:
+      // Mengupload ke Server / Firebase / cloud
+
+      let mediaRecorder;
+      let audioChunks = [];
+      const feedback = document.getElementById('feedback');
+      const audioPlayback = document.getElementById('audioPlayback');
+
+      async function startRecording() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+          });
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+
+          mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) audioChunks.push(event.data);
+          };
+
+          mediaRecorder.onstop = () => {
+            const blob = new Blob(audioChunks, { type: 'audio/webm' });
+            const audioURL = URL.createObjectURL(blob);
+            audioPlayback.src = audioURL;
+            audioPlayback.style.display = 'block';
+            feedback.innerText = 'Feedback: Rekaman selesai.';
+          };
+
+          mediaRecorder.start();
+          feedback.innerText = 'Feedback: Merekam...';
+        } catch (err) {
+          alert('Gagal mengakses mikrofon: ' + err.message);
         }
+      }
 
-        const recognition = new webkitSpeechRecognition();
-        recognition.lang = 'id-ID';
-        recognition.continuous = false;
-        recognition.interimResults = false;
+      function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+        }
+      }
 
-        recognition.onresult = (event) => {
-          const result = event.results[0][0].transcript;
-          document.getElementById('feedback').innerText = 'Feedback: ' + result;
-        };
-
-        recognition.onerror = (event) => {
-          alert('Error saat pengenalan suara: ' + event.error);
-        };
-
-        recognition.start();
+      function playRecording() {
+        if (audioPlayback.src) {
+          audioPlayback.play();
+        }
       }
     </script>
   </body>
