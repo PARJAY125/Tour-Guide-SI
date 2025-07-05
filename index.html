@@ -102,22 +102,59 @@
         <p id="descriptionText">-</p>
 
         <div style="text-align: end">
-          <button onclick="stopTTS()">Stop</button>
-          <button onclick="playTTS()">🔊 Baca Deskripsi</button>
+          <button id="ttsButton" onclick="toggleTTS()">
+            🔊 Baca Deskripsi
+          </button>
         </div>
       </div>
 
-      <!-- Rekaman suara -->
-      <button onclick="startRecording()">🎙️ Mulai Rekam</button>
-      <button onclick="stopRecording()">🛑 Stop Rekam</button>
-      <button onclick="playRecording()">▶️ Putar Rekaman</button>
       <p id="feedback">Feedback: -</p>
       <audio id="audioPlayback" controls style="display: none"></audio>
+      <button id="recordButton" onclick="toggleRecording()">
+        🎙️ Mulai Rekam
+      </button>
     </div>
 
     <script>
       // data credit to https://www.kaggle.com/datasets/bertnardomariouskono/bali-tourist-attractions-dataset-from-google-maps
+
       const places = [
+        // data sendiri
+        {
+          name: 'Kamar Saya',
+          lat: -8.6218258,
+          lon: 115.2616085,
+          radius: 5,
+          description:
+            'Kamar ini adalah ruang pribadi yang nyaman untuk beristirahat dan bersantai, terletak di tengah rumah, dilengkapi dengan suasana tenang dan cahaya alami yang cukup.',
+        },
+        {
+          name: 'Dapur Saya',
+          lat: -8.6218208,
+          lon: 115.2615995,
+          radius: 5,
+          description:
+            'Dapur rumah ini menjadi tempat berkumpul keluarga kecil saat memasak atau sekadar menyeduh kopi di pagi hari, menciptakan aroma khas yang akrab dan hangat.',
+        },
+        {
+          name: 'Ruang Tamu Saya',
+          lat: -8.621819,
+          lon: 115.2616234,
+          radius: 5,
+          description:
+            'Ruang tamu sederhana namun hangat ini menjadi tempat menyambut tamu dan berkumpul bersama keluarga sambil berbincang santai di sore hari.',
+        },
+
+        // data dari pak geda
+        {
+          name: 'Mepantigan Bali',
+          lat: -8.615933944181267,
+          lon: 115.26382448220892,
+          radius: 150,
+          description:
+            'Mepantigan Bali adalah tempat latihan seni bela diri tradisional Bali yang unik, menggabungkan pertarungan lumpur, meditasi, dan pertunjukan budaya. Terletak di alam terbuka Batubulan, tempat ini menawarkan pengalaman luar biasa: mulai dari latihan fisik, menari, panahan, hingga terapi sauna dan pijat. Atmosfernya santai dan akrab, cocok untuk keluarga maupun pencari petualangan. Bahkan selebriti dunia seperti Kim Kardashian dan David Copperfield pernah mengunjungi tempat ini. Cocok bagi siapa saja yang ingin merasakan sisi otentik dan menyegarkan dari Bali.',
+        },
+
         {
           name: 'Taman Mumbul Sangeh',
           lat: -8.483959,
@@ -298,7 +335,7 @@
       }
 
       function isUserInRadius(userLat, userLon, place) {
-        const R = 6371e3; // radius bumi dalam meter
+        const earthR = 6371e3; // radius bumi dalam meter
         const toRad = (deg) => (deg * Math.PI) / 180;
 
         const dLat = toRad(place.lat - userLat);
@@ -310,7 +347,20 @@
             Math.cos(toRad(place.lat)) *
             Math.sin(dLon / 2) ** 2;
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const distance = R * c;
+        const distance = earthR * c;
+
+        console.log(`🚩 Tempat: ${place.name}`);
+        console.log(
+          `📍 User Position: (${userLat.toFixed(6)}, ${userLon.toFixed(6)})`
+        );
+        console.log(
+          `📌 Tempat Position: (${place.lat.toFixed(6)}, ${place.lon.toFixed(
+            6
+          )})`
+        );
+        console.log(`📏 Jarak: ${distance.toFixed(2)} meter`);
+        console.log(`📶 Radius tempat: ${place.radius} meter`);
+        console.log(`✅ Dalam radius: ${distance <= place.radius}\n`);
 
         return distance <= place.radius;
       }
@@ -348,34 +398,63 @@
         }
       }
 
-      function playTTS() {
+      // TTS toggle with responsiveVoice
+      let isSpeaking = false;
+      function toggleTTS() {
+        const btn = document.getElementById('ttsButton');
+
         if (!selectedPlace) {
           alert('Silakan pilih tempat wisata terlebih dahulu.');
           return;
         }
-        responsiveVoice.speak(selectedPlace.description, 'Indonesian Female', {
-          pitch: 1,
-          rate: 1,
-          volume: 1,
-        });
-      }
 
-      function stopTTS() {
-        responsiveVoice.cancel();
+        if (!isSpeaking) {
+          btn.innerText = '🛑 Stop';
+          isSpeaking = true;
+
+          responsiveVoice.speak(
+            selectedPlace.description,
+            'Indonesian Female',
+            {
+              pitch: 1,
+              rate: 1,
+              volume: 1,
+              onend: function () {
+                isSpeaking = false;
+                btn.innerText = '🔊 Baca Deskripsi';
+              },
+            }
+          );
+        } else {
+          responsiveVoice.cancel();
+          isSpeaking = false;
+          btn.innerText = '🔊 Baca Deskripsi';
+        }
       }
 
       // Rekaman Suara
+      // Next Step: Mengupload ke Server / Firebase / cloud
 
-      // Current Step:
-      // error
-
-      // Next Step:
-      // Mengupload ke Server / Firebase / cloud
+      let isRecording = false;
 
       let mediaRecorder;
       let audioChunks = [];
       const feedback = document.getElementById('feedback');
       const audioPlayback = document.getElementById('audioPlayback');
+
+      function toggleRecording() {
+        if (!isRecording) {
+          startRecording();
+          isRecording = true;
+          const btn = document.getElementById('recordButton');
+          btn.innerText = '🛑 Stop Rekam';
+        } else {
+          stopRecording();
+          isRecording = false;
+          const btn = document.getElementById('recordButton');
+          btn.innerText = '🎙️ Mulai Rekam';
+        }
+      }
 
       async function startRecording() {
         try {
@@ -407,12 +486,6 @@
       function stopRecording() {
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
           mediaRecorder.stop();
-        }
-      }
-
-      function playRecording() {
-        if (audioPlayback.src) {
-          audioPlayback.play();
         }
       }
     </script>
