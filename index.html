@@ -537,12 +537,11 @@
 
         feedback.innerText = '⏳ Mengirim rekaman...';
 
-        const { data, error } = await supabase.storage
+        const { data, error } = await client.storage
           .from('audio')
           .upload(filename, blob, {
             contentType: 'audio/webm',
           });
-
         if (error) {
           console.error('❌ Gagal upload:', error.message);
           feedback.innerText = '❌ Gagal mengirim rekaman.';
