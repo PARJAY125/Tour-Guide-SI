@@ -392,11 +392,11 @@
               );
 
               if (nearbyPlaces.length > 0) {
+                const nearest = nearbyPlaces[0];
                 const names = nearbyPlaces.map((p) => p.name).join(', ');
                 document.getElementById('location').innerText =
                   locationText + `\nDekat dengan: ${names}`;
 
-                // Update UI
                 document.getElementById('descriptionText').innerText =
                   nearest.description;
 
