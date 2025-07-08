@@ -403,9 +403,11 @@
                 const index = places.findIndex((p) => p.name === nearest.name);
                 if (index >= 0) {
                   document.getElementById('placeSelect').value = index;
+                  selectedPlace = nearest;
                 }
 
                 // Mainkan TTS otomatis
+                // pada bagian ini, dia error Silakan pilih tempat wisata terlebih dahulu.
                 toggleTTS();
               } else {
                 document.getElementById('location').innerText =
@@ -454,8 +456,6 @@
       }
 
       // Rekaman Suara
-      // Next Step: Mengupload ke Server / Firebase / cloud
-
       let isRecording = false;
 
       let mediaRecorder;
