@@ -114,9 +114,8 @@
         🎙️ Mulai Rekam
       </button>
 
-      <button id="uploadButton" onclick="kirimAudio()" style="display: none">
-        📤 Kirim Rekaman
-      </button>
+      <!-- tidak perlu membuat display hilang muncul, jika file kosong tampilkan alert saja -->
+      <button id="uploadButton" onclick="kirimAudio()">📤 Kirim Rekaman</button>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
