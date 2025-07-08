@@ -120,13 +120,12 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
-      const supabase = supabase.createClient(
-        'https://jvaaimfccvxvzkmcfofs.supabase.co/storage/',
+      const client = supabase.createClient(
+        'https://jvaaimfccvxvzkmcfofs.supabase.co',
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YWFpbWZjY3Z4dnprbWNmb2ZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NTAyNTIsImV4cCI6MjA2NzUyNjI1Mn0.ktF02hviZA8mJ0ZB4UP_xQvp3Lkej3BBXdFRfFY8rCg'
       );
 
       // data credit to https://www.kaggle.com/datasets/bertnardomariouskono/bali-tourist-attractions-dataset-from-google-maps
-
       const places = [
         // data sendiri
         {
@@ -511,22 +510,6 @@
       function stopRecording() {
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
           mediaRecorder.stop();
-        }
-      }
-
-      async function uploadAudio(blob) {
-        const filename = `audio-${Date.now()}.webm`;
-
-        const { data, error } = await supabase.storage
-          .from('audio')
-          .upload(filename, blob, {
-            contentType: 'audio/webm',
-          });
-
-        if (error) {
-          console.error('❌ Gagal upload:', error.message);
-        } else {
-          console.log('✅ Sukses upload:', data);
         }
       }
 
