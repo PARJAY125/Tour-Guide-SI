@@ -113,9 +113,19 @@
       <button id="recordButton" onclick="toggleRecording()">
         🎙️ Mulai Rekam
       </button>
+
+      <button id="uploadButton" onclick="kirimAudio()" style="display: none">
+        📤 Kirim Rekaman
+      </button>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
+      const supabase = supabase.createClient(
+        'https://jvaaimfccvxvzkmcfofs.supabase.co/storage/',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YWFpbWZjY3Z4dnprbWNmb2ZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NTAyNTIsImV4cCI6MjA2NzUyNjI1Mn0.ktF02hviZA8mJ0ZB4UP_xQvp3Lkej3BBXdFRfFY8rCg'
+      );
+
       // data credit to https://www.kaggle.com/datasets/bertnardomariouskono/bali-tourist-attractions-dataset-from-google-maps
 
       const places = [
@@ -386,6 +396,19 @@
                 const names = nearbyPlaces.map((p) => p.name).join(', ');
                 document.getElementById('location').innerText =
                   locationText + `\nDekat dengan: ${names}`;
+
+                // Update UI
+                document.getElementById('descriptionText').innerText =
+                  nearest.description;
+
+                // Set selected option di dropdown
+                const index = places.findIndex((p) => p.name === nearest.name);
+                if (index >= 0) {
+                  document.getElementById('placeSelect').value = index;
+                }
+
+                // Mainkan TTS otomatis
+                toggleTTS();
               } else {
                 document.getElementById('location').innerText =
                   locationText + `\nTidak dekat dengan tempat wisata manapun.`;
@@ -474,6 +497,9 @@
             audioPlayback.src = audioURL;
             audioPlayback.style.display = 'block';
             feedback.innerText = 'Feedback: Rekaman selesai.';
+
+            document.getElementById('uploadButton').style.display =
+              'inline-block';
           };
 
           mediaRecorder.start();
@@ -486,6 +512,62 @@
       function stopRecording() {
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
           mediaRecorder.stop();
+        }
+      }
+
+      async function uploadAudio(blob) {
+        const filename = `audio-${Date.now()}.webm`;
+
+        const { data, error } = await supabase.storage
+          .from('audio')
+          .upload(filename, blob, {
+            contentType: 'audio/webm',
+          });
+
+        if (error) {
+          console.error('❌ Gagal upload:', error.message);
+        } else {
+          console.log('✅ Sukses upload:', data);
+        }
+      }
+
+      async function kirimAudio() {
+        if (audioChunks.length === 0) {
+          alert('Belum ada rekaman untuk dikirim.');
+          return;
+        }
+
+        const blob = new Blob(audioChunks, { type: 'audio/webm' });
+
+        // Ambil waktu lokal sekarang
+        const now = new Date();
+        const timestamp = now
+          .toLocaleString('sv-SE', { timeZone: 'Asia/Makassar' }) // Format YYYY-MM-DD HH:MM:SS
+          .replace(' ', '_')
+          .replace(/:/g, '-');
+
+        // Ambil nama tempat, fallback ke "unknown-location" jika tidak ada
+        const placeName = selectedPlace?.name
+          ? selectedPlace.name.replace(/\s+/g, '-').replace(/[^\w\-]/g, '')
+          : 'unknown-location';
+
+        const filename = `${placeName}-${timestamp}.webm`;
+
+        feedback.innerText = '⏳ Mengirim rekaman...';
+
+        const { data, error } = await supabase.storage
+          .from('audio')
+          .upload(filename, blob, {
+            contentType: 'audio/webm',
+          });
+
+        if (error) {
+          console.error('❌ Gagal upload:', error.message);
+          feedback.innerText = '❌ Gagal mengirim rekaman.';
+        } else {
+          console.log('✅ Berhasil upload:', data);
+          feedback.innerText = `✅ Rekaman berhasil dikirim sebagai: ${filename}`;
+          document.getElementById('uploadButton').style.display = 'none';
         }
       }
     </script>
